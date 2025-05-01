@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <!-- Metadata -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="author" content="George W. Park">
+    <meta name="description" content="This project demonstrates how CSS grid (with flexbox and float fallback) can be used to re-create the layout of an Instagram profile page.">
+
+    <!-- Title -->
+    <title>Instagram Profile Layout</title>
+
+    <!-- External CSS Files -->
+    <link rel="stylesheet" href="{% static 'assets3/css/reset.css' %}">
+    <link rel="stylesheet" href="{% static 'assets3/css/styles.css' %}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css">
+
+    <style>
+        /* Apply background color to the whole page */
+        body {
+            background-color: #5a818e; /* Set background color */
+            font-family: 'Open Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        .profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .profile-image img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+        }
+
+        .profile-user-settings {
+            text-align: center;
+        }
+
+        .profile-user-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #5a818e;
+        }
+
+        .profile-user-settings .btn {
+            background-color: #5a818e;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .profile-user-settings .btn:hover {
+            background-color: #486f7c;
+        }
+
+        .profile-bio {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .profile-stats ul {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .profile-stats li {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .gallery-item {
+            position: relative;
+            background-color: #f4f4f4;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .gallery-item-likes,
+        .gallery-item-comments {
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <br><br><br>
+        <div class="container">
+
+            <div class="profile">
+
+                <div class="profile-image">
+                    <img src="{{profile.image.url}}" alt="Profile Image">
+                </div>
+
+                <div class="profile-user-settings">
+                    {% if profile.first_name %}
+                    <h6 class="profile-user-name">{{profile.first_name}} {{profile.last_name}}</h6> <br>
+                    {% endif %}
+                    <h5 class="profile-user-name">@{{profile.user.username}}</h5>
+
+                    {% if request.user.is_authenticated and request.user == profile.user %}
+                    <a href="{% url 'editprofile' %}" class="btn">Edit Profile</a>
+                    <form action="{% url 'sign-out' %}" method="post" style="display: inline-block">
+                        {% csrf_token %}
+                        <button class="btn" type="submit">Logout</button>
+                    </form>
+                    {% endif %}
+
+                    {% if request.user.is_authenticated and request.user != profile.user %}
+                    <a href="{% url 'follow' profile.user 1 %}" class="btn" style="color: green;">Follow</a> <br><br>
+                    {% endif %}
+                    <a href="{% url 'conversation' profile.user  %}" class="btn">Message</a>
+                </div>
+
+                <div class="profile-bio">
+                    {% if profile.bio %}
+                    <p>◉ {{profile.bio}}</p>
+                    {% endif %}
+                    {% if profile.location %}
+                    <p>◉ {{profile.location}}</p>
+                    {% endif %}
+                    {% if profile.url %}
+                    <p>◉ <a href="{{profile.url}}" target="_blank">{{profile.url}}</a></p>
+                    {% endif %}
+                </div>
+
+                <div class="profile-stats">
+                    <ul>
+                        <li><span class="profile-stat-count">{{posts_count}}</span> posts</li>
+                        <li><span class="profile-stat-count">{{followers_count}}</span> followers</li>
+                        <li><span class="profile-stat-count">{{following_count}}</span> following</li>
+                    </ul>
+                </div>
+
+            </div>
+
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="gallery">
+                {% for post in posts %}
+                <a href="{{post.get_absolute_url}}">
+                    <div class="gallery-item">
+                        <img src="{{ post.picture.url }}" class="gallery-image" alt="Post Image">
+                        <div class="gallery-item-info">
+                            <ul>
+                                <li class="gallery-item-likes"><i class="fas fa-heart"></i> {{post.likes}}</li>
+                                <li class="gallery-item-comments"><i class="fas fa-comment"></i> {{post.comment.count}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
+
+{% endblock content %}
